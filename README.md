@@ -4,6 +4,6 @@ A RAG chatbot using streamlit, langchain and ...
 
 ## TO-DO
 - [x] Supports OpenAI models
-- [ ] Histroy functionality
+- [x] Histroy functionality
 - [ ] adding pdfs
 - [ ] Support other models

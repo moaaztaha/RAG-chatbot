@@ -18,9 +18,9 @@ st.title("RAG Bot 🤖")
 st.write("Chat with your with your files using your favorite model!")
 # streamlit collapsable widget for features
 with st.expander("Features", expanded=True):
-    st.write("1. **Choose between multiple models**")
+    st.write("1. **Choose between multiple OpenAI models**")
+    st.write("2. **Histroy support**")
     # st.write("1. **Chat with your files (pdfs)**")
-    # st.write("2. **Histroy support**")
 
 # init chat history
 if "chat_history" not in st.session_state:
