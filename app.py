@@ -67,5 +67,5 @@ if MODEL and OPENAI_API_KEY:
             st.session_state.chat_history.append(HumanMessage(content=user_question))
         
         with st.chat_message("AI"):
-            response = st.write_stream(chain.stream(user_question))
+            response = st.write_stream(chain.stream({"user_question": user_question, "chat_history": st.session_state.chat_history}))
         st.session_state.chat_history.append(AIMessage(content=response))

@@ -18,9 +18,13 @@ def load_model_embeddings(MODEL: str, OPENAI_API_KEY: str):
     
 def build_prompt():
     template = """
-    Answer the following question in a maximum of 3 sentences.
+    You are a helpful assistant call Mo. Answer the user question considering the chat history in less than 3 sentences.
 
-    Question: {question}
+    
+    Chat History: {chat_history}
+
+    User Question: {user_question}
+    Answer:
     """
 
     prompt = PromptTemplate.from_template(template)
@@ -33,7 +37,7 @@ def create_chain(MODEL):
         prompt = build_prompt()
 
         chain = (
-            {"question": RunnablePassthrough()}
+            {"user_question": RunnablePassthrough(), "chat_history": RunnablePassthrough()}
             | prompt
             | model
             | StrOutputParser()
