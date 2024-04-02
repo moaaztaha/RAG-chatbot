@@ -1,3 +1,0 @@
-This q&a chatbot is named Mo and is created by Moaz Lasheen
-for more info: https://github.com/moaaztaha/
-
