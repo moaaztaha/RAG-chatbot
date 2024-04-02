@@ -1,45 +1,28 @@
-import os
-import streamlit as st
-from langchain_openai.chat_models import ChatOpenAI
-from langchain_openai.embeddings import OpenAIEmbeddings
+from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import Chroma
 
-from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import PromptTemplate
+def load_process(path: str = "data"):
+    loader = PyPDFDirectoryLoader(path)
+    documents = loader.load()
+    print(f"# documents: {len(documents)} loaded!")
 
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+    # splittting the text
+    text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200,
+    length_function=len)
 
-def load_model_embeddings(MODEL: str, OPENAI_API_KEY: str):
-    if MODEL.startswith("gpt"):
-        model = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model_name=MODEL)
-        embeddings = OpenAIEmbeddings()
-        print(f"Using OpenAI model: {MODEL}")
-
-        return model, embeddings
+    texts = text_splitter.split_documents(documents)
     
-def build_prompt():
-    template = """
-    You are a helpful assistant call Mo. Answer the user question considering the chat history in less than 3 sentences.
+    # embed and store persistently 
+    persist_directory = 'db'
+    embedding = OpenAIEmbeddings()
+    vectorstore = Chroma.from_documents(texts, embedding, persist_directory=persist_directory)
+    vectorstore.persist()
 
-    
-    Chat History: {chat_history}
+    # make a retriever from the vectorstore
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-    User Question: {user_question}
-    Answer:
-    """
-
-    prompt = PromptTemplate.from_template(template)
-    return prompt
-
-@st.cache_resource(show_spinner=False)
-def create_chain(MODEL):
-    with st.spinner("Loading model and creating embeddings..."):
-        model, _ = load_model_embeddings(MODEL, os.environ["OPENAI_API_KEY"])
-        prompt = build_prompt()
-
-        chain = (
-            {"user_question": RunnablePassthrough(), "chat_history": RunnablePassthrough()}
-            | prompt
-            | model
-            | StrOutputParser()
-        )
-    return chain
+    return retriever

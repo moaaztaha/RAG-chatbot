@@ -5,7 +5,8 @@ __pycache__/
 
 # local
 .bot/
-
+db/
+.chainlit/
 # C extensions
 *.so
 
