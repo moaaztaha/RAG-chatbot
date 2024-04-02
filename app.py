@@ -4,7 +4,8 @@ import shutil
 import time
 import chainlit as cl
 from utils import load_process
-
+from chainlit.input_widget import Select
+from langchain_community.vectorstores import Chroma
 TO_REMOVE = []
 
 
@@ -14,6 +15,18 @@ async def init():
     chain = load_process()
     cl.user_session.set("chain", chain)
     await cl.Message(content="Your assistant is ready 😊", disable_feedback=True).send()
+    
+    
+    settings = await cl.ChatSettings(
+        [
+            Select(
+                id="Model",
+                label="Choose the prefered model",
+                values=["gpt-3.5-turbo", "gemma:2b", "llama2", "gpt-4"],
+                initial_index=0,
+            )
+        ]
+    ).send()
 
 @cl.on_message
 async def main(message: cl.Message):
@@ -22,6 +35,10 @@ async def main(message: cl.Message):
         await cl.Message(content="Processing files...",
                          disable_feedback=True).send()
         for file in message.elements:
+            if file.type != "application/pdf":
+                await cl.Message(content=f"File {file.name} is not a pdf. Skipping...",
+                         disable_feedback=True).send()
+                continue
             new_path = os.path.join("data", file.name)
             TO_REMOVE.append(new_path)
             shutil.copy(file.path, new_path)
@@ -54,6 +71,15 @@ async def main(message: cl.Message):
     await cl.Message(content=result, elements=text_elements).send()
 
 
+@cl.on_settings_update
+async def setup_agent(settings):
+    print("on_settings_update", settings)
+    
+    Chroma().delete_collection()
+    chain = load_process(model=settings["Model"])
+    cl.user_session.set("chain", chain)
+    await cl.Message(content="Swtiched to model: " + settings["Model"] + " ✅",
+                         disable_feedback=True).send()
 
 
 @cl.on_chat_end

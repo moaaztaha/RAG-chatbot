@@ -6,13 +6,15 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
 from langchain_openai import OpenAI
+from langchain_community.llms import Ollama
+from langchain_community.embeddings import OllamaEmbeddings
 from langchain.chains import RetrievalQA
 
 
 
 
 
-def load_process(path: str = "data"):
+def load_process(path: str = "data", model: str = "gpt-3.5-turbo"):
     loader = PyPDFDirectoryLoader(path)
     documents = loader.load()
     print(f"# documents: {len(documents)} loaded!")
@@ -25,20 +27,29 @@ def load_process(path: str = "data"):
 
     texts = text_splitter.split_documents(documents)
     
-    # embed and store persistently 
-    persist_directory = 'database'
+    # choose llm and embedding
+    if model.startswith("gpt"):
+        embedding = OpenAIEmbeddings()
+        llm=OpenAI(temperature=0, streaming=True, model_name=model)
 
-    embedding = OpenAIEmbeddings()
-    vectorstore = Chroma.from_documents(texts, embedding, persist_directory=persist_directory)
-    vectorstore.persist()
+    else:
+        llm = Ollama(model=model, temperature=0)
+        embedding = OllamaEmbeddings(model=model)
+
+    print("************ Switched to model:", model, "************")
+    
+    # embed and store persistently 
+    # persist_directory = 'database'
+    vectorstore = Chroma.from_documents(texts, embedding)
+    # vectorstore.persist()
 
     # make a retriever from the vectorstore
     retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-
+    
 
     # chain_type_kwargs = {"prompt": prompt}
     chain = RetrievalQA.from_chain_type(
-        llm=OpenAI(temperature=0, streaming=True),
+        llm=llm,
         chain_type="stuff",
         retriever=retriever,
         return_source_documents=True,
